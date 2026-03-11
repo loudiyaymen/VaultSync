@@ -1,0 +1,9 @@
+[package]
+name = "vault_sync"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dotenv = "0.15.0"
+notify = "8.0.0"
+
