@@ -1,4 +1,6 @@
 .env
+test.txt
+encrypted_test.vault
 
 # Added by cargo
 
