@@ -1,7 +1,8 @@
 .env
 test.txt
 encrypted_test.vault
-
+decrypted_test
+decrypted
 # Added by cargo
 
 /target
