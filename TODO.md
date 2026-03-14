@@ -18,6 +18,8 @@
 - [x] Write encrypted file to disk
 - [x] Wire up `config`, `encryptor`, and `watcher` in `main.rs`
 - [x] Handle Result types properly in `encrypt_file`
+- [x] Implement `decrypt_file` to support full encryption ➔ decryption roundtrip
+- [x] Write decrypted output to `decrypted/` folder using `Path::new().join()`
 
 ## Testing
 
@@ -28,10 +30,14 @@
 
 - [ ] Replace remaining `unwrap`/`expect` with proper error handling
 - [ ] Automatically append `.vault` extension if missing
+- [ ] Embed original filename or extension as metadata in encrypted output
+- [ ] Refactor decrypt logic to read and apply original filename
+- [ ] (Optional) Prepend `decrypted_` to restored filename to avoid overwriting
 
 ## Features
 
-- [ ] Implement `decrypt_file` to support full encryption ➔ decryption roundtrip
+- [ ] Consider splitting `encryptor.rs` into `encryptor.rs` and `decryptor.rs` for clarity?
+- [ ] Refactor shared I/O utilities into helpers
 
 ## Operational (Next)
 
