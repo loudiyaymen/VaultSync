@@ -7,11 +7,13 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 
-pub fn encrypt_file(path: &str, output: &str, key: &Key<Aes256Gcm>) -> std::io::Result<()> {
+pub fn encrypt_file(path: &str, key: &Key<Aes256Gcm>) -> std::io::Result<()> {
     let cipher = Aes256Gcm::new(key);
     let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
     let file_bytes = fs::read(Path::new(path))?;
-
+    let input_path = Path::new(path);
+    let stem = input_path.file_stem().unwrap().to_str().unwrap();
+    let output_path = input_path.with_file_name(format!("{}.vault", stem));
     let cipher_text = cipher
         .encrypt(&nonce, file_bytes.as_ref())
         .expect("Encryption failed");
@@ -32,7 +34,7 @@ pub fn encrypt_file(path: &str, output: &str, key: &Key<Aes256Gcm>) -> std::io::
     buffer.extend_from_slice(filename);
     buffer.extend_from_slice(&cipher_text);
 
-    fs::write(output, buffer)
+    fs::write(output_path, buffer)
 }
 
 pub fn decrypt_file(path: &str, key: &Key<Aes256Gcm>) {
@@ -65,4 +67,38 @@ pub fn decrypt_file(path: &str, key: &Key<Aes256Gcm>) {
     let output_path = Path::new("decrypted").join(&output_name);
     fs::create_dir_all("decrypted").expect("Failed to create decrypted folder");
     fs::write(&output_path, plaintext).expect("Failed to write decrypted output");
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use aes_gcm::KeyInit;
+    use std::fs::{self, File};
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_encrypt_and_decrypt() {
+        let dir = tempdir().expect("failed to create temp dir");
+
+        let input_path = dir.path().join("test.txt");
+        let original_content = b"vaultsync test data";
+        let mut input_file = File::create(&input_path).expect("failed to create input file");
+        input_file
+            .write_all(original_content)
+            .expect("failed to write test content");
+
+        let encrypted_path = dir.path().join("test.vault");
+        let key = Aes256Gcm::generate_key(OsRng);
+        encrypt_file(input_path.to_str().unwrap(), &key).expect("encryption failed");
+
+        decrypt_file(encrypted_path.to_str().unwrap(), &key);
+
+        let decrypted_path = Path::new("decrypted").join("test.txt");
+        assert!(decrypted_path.exists(), "decrypted file not found");
+
+        let decrypted_content = fs::read(&decrypted_path).expect("failed to read decrypted file");
+        assert_eq!(original_content, decrypted_content.as_slice());
+
+        fs::remove_file(&decrypted_path).ok();
+    }
 }
