@@ -4,11 +4,11 @@ SecureDrop is a cross-platform Rust program that watches a folder for incoming f
 
 ## Features
 
-- 📁 **Folder Monitoring**: Watches for any new file in a designated directory
-- 🔐 **File Encryption**: Uses AES-256-GCM encryption for high-security standards
-- 🌐 **SFTP Upload**: Sends encrypted files to a remote server over a secure SFTP connection
-- 🧹 **Cleanup**: Deletes original plaintext files after secure upload
-- 🔁 **Autostart Capable**: Can be configured to run automatically at system boot on Windows
+- **Folder Monitoring**: Watches for any new file in a designated directory
+- **File Encryption**: Uses AES-256-GCM encryption for high-security standards
+- **SFTP Upload**: Sends encrypted files to a remote server over a secure SFTP connection
+- **Cleanup**: Deletes original plaintext files after secure upload
+- **Autostart Capable**: Can be configured to run automatically at system boot on Windows
 
 ## How it works
 
@@ -56,3 +56,5 @@ Dependencies
 License
 
 MIT License
+
+📋 [Project TODO List](./TODO.md)
