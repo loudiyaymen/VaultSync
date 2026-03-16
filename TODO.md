@@ -16,30 +16,32 @@
 - [x] Generate secure random nonce per file
 - [x] Prepend nonce to ciphertext in output file
 - [x] Write encrypted file to disk
+- [x] Automatically append `.vault` extension, removing original
+- [x] Embed original filename or extension as metadata in encrypted output
 - [x] Wire up `config`, `encryptor`, and `watcher` in `main.rs`
 - [x] Handle Result types properly in `encrypt_file`
 - [x] Implement `decrypt_file` to support full encryption ➔ decryption roundtrip
 - [x] Write decrypted output to `decrypted/` folder using `Path::new().join()`
+- [x] Refactor decrypt logic to read and apply original filename
 
 ## Testing
 
-- [ ] Write unit tests for `config`, `encryptor`, and `watcher` modules
-- [ ] Test `encrypt_file` cleanly using temporary files
+- [x] Write unit tests for `encryptor` with roundtrip validation
+- [ ] Write unit tests for `config`, and `watcher` modules
+- [ ] Test edge cases (empty file, binary, unicode filename)
 
 ## Code Improvements
 
 - [ ] Replace remaining `unwrap`/`expect` with proper error handling
-- [ ] Automatically append `.vault` extension if missing
-- [ ] Embed original filename or extension as metadata in encrypted output
-- [ ] Refactor decrypt logic to read and apply original filename
-- [ ] (Optional) Prepend `decrypted_` to restored filename to avoid overwriting
-
-## Features
-
-- [ ] Consider splitting `encryptor.rs` into `encryptor.rs` and `decryptor.rs` for clarity?
 - [ ] Refactor shared I/O utilities into helpers
+- [ ] Consider splitting `encryptor.rs` into `encryptor.rs` and `decryptor.rs` for clarity
 
-## Operational (Next)
+## Operational
 
-- [ ] Handle graceful shutdown (stop watcher thread on Ctrl+C)
+- [x] Handle graceful shutdown (stop watcher thread on Ctrl+C using `ctrlc`)
 - [ ] Securely zeroize encryption keys after use
+
+## Future
+
+- [ ] Integrate SFTP upload after encryption
+- [ ] Store SFTP credentials via config/env
