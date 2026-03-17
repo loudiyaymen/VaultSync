@@ -1,6 +1,6 @@
-# SecureDrop
+# VaultSync
 
-SecureDrop is a cross-platform Rust program that watches a folder for incoming files, encrypts them securely, uploads them to a remote SFTP server, and deletes the original unencrypted file afterward.
+VaultSync is a cross-platform Rust program that watches a folder for incoming files, encrypts them securely, uploads them to a remote SFTP server, and deletes the original unencrypted file afterward.
 
 ## Features
 
@@ -32,7 +32,7 @@ SecureDrop is a cross-platform Rust program that watches a folder for incoming f
     Build and run the project:
 
     cargo build --release
-    ./target/release/securedrop
+    ./target/release/vault_sync
 
     (Optional) Configure autostart for background running on system startup.
    ```
@@ -42,6 +42,14 @@ Cross-Platform
     ✅ Works on Linux, macOS, and Windows
 
     ✅ Cross-compilation supported (x86_64-pc-windows-gnu for Windows binaries)
+
+⚠️ Important Notes for macOS Users
+
+    Terminal apps like iTerm2 and VSCode Terminal may be sandboxed by macOS.
+
+    Running ssh2, telnet, or any raw socket-based Rust code from those apps may result in “No route to host” or similar errors.
+
+    To avoid this: run from the default macOS Terminal.app or ensure your terminal app is granted full disk and network permissions under System Settings → Privacy & Security.
 
 Dependencies
 
@@ -102,5 +110,5 @@ MIT License
 
 ## Future
 
-- [ ] Integrate SFTP upload after encryption
-- [ ] Store SFTP credentials via config/env
+- [x] Integrate SFTP upload after encryption
+- [x] Store SFTP credentials via config/env
