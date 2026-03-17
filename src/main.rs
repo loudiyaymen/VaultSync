@@ -1,17 +1,18 @@
 use aes_gcm::{aead::OsRng, Aes256Gcm, KeyInit};
 use config::load_watch_dir;
 use encryptor::{decrypt_file, encrypt_file};
+use sftp::upload_file;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
 use watcher::start_watching;
-
 mod config;
 mod encryptor;
+mod sftp;
 mod watcher;
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     load_watch_dir();
     let shutdown_flag = Arc::new(AtomicBool::new(false));
 
@@ -30,7 +31,7 @@ fn main() -> std::io::Result<()> {
     let key = Aes256Gcm::generate_key(OsRng);
     encrypt_file("test.png", &key)?;
     decrypt_file("test.vault", &key);
-
+    upload_file("test.vault")?;
     watcher_handle.join().unwrap();
     Ok(())
 }
