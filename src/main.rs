@@ -1,19 +1,25 @@
 use aes_gcm::{aead::OsRng, Aes256Gcm, KeyInit};
 use config::load_watch_dir;
-use encryptor::{decrypt_file, encrypt_file};
-use sftp::upload_file;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    path::Path,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 use watcher::start_watching;
+use zeroize::Zeroize;
 mod config;
 mod encryptor;
 mod sftp;
 mod watcher;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    load_watch_dir();
+    let watch_dir = load_watch_dir();
+    if !Path::new(&watch_dir).exists() {
+        eprintln!("WATCH_DIR '{}' does not exist.", watch_dir);
+        std::process::exit(1);
+    }
     let shutdown_flag = Arc::new(AtomicBool::new(false));
 
     let shutdown_handle = shutdown_flag.clone();
@@ -23,15 +29,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })
     .expect("Error setting Ctrl+C handler");
 
-    let watcher_flag = shutdown_flag.clone();
-    let watcher_handle = std::thread::spawn(move || {
-        let _ = start_watching(".", watcher_flag);
-    });
+    let mut key = Aes256Gcm::generate_key(OsRng);
+    let watcher_key = key.clone();
+    println!("Watching directory: {}", watch_dir);
 
-    let key = Aes256Gcm::generate_key(OsRng);
-    encrypt_file("test.png", &key)?;
-    decrypt_file("test.vault", &key);
-    upload_file("test.vault")?;
+    let watcher_handle = std::thread::spawn(move || {
+        let _ = start_watching(&watch_dir, shutdown_flag, watcher_key);
+    });
+    key.zeroize();
     watcher_handle.join().unwrap();
     Ok(())
 }
