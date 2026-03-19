@@ -37,7 +37,7 @@ pub fn encrypt_file(path: &str, key: &Key<Aes256Gcm>) -> std::io::Result<()> {
     fs::write(output_path, buffer)
 }
 
-pub fn decrypt_file(path: &str, key: &Key<Aes256Gcm>) {
+pub fn _decrypt_file(path: &str, key: &Key<Aes256Gcm>) {
     let mut file = File::open(path).expect("Failed to open encrypted file");
     let mut nonce_bytes = [0u8; 12];
     file.read_exact(&mut nonce_bytes)
@@ -91,7 +91,7 @@ mod tests {
         let key = Aes256Gcm::generate_key(OsRng);
         encrypt_file(input_path.to_str().unwrap(), &key).expect("encryption failed");
 
-        decrypt_file(encrypted_path.to_str().unwrap(), &key);
+        _decrypt_file(encrypted_path.to_str().unwrap(), &key);
 
         let decrypted_path = Path::new("decrypted").join("test.txt");
         assert!(decrypted_path.exists(), "decrypted file not found");
