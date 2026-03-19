@@ -65,13 +65,13 @@ License
 
 MIT License
 
-## VaultSync TODO List
+# VaultSync TODO List
 
-### Setup
+## Setup
 
 - [x] Initialize project with `cargo init`
 - [x] Set up `.gitignore`
-- [x] Add dependencies: `aes-gcm`, `rand`, `notify`, `dotenv`
+- [x] Add dependencies: `aes-gcm`, `rand`, `notify`, `dotenv`, `ssh2`, `zeroize`
 - [x] Load `.env` file using `dotenv` in `config.rs`
 - [x] Read `WATCH_DIR` environment variable from `.env`
 
@@ -79,17 +79,20 @@ MIT License
 
 - [x] Implement folder watcher using `notify` crate (`watcher.rs`)
 - [x] Spawn watcher on a separate thread
+- [x] Dynamically load `WATCH_DIR` and validate existence
+- [x] Log raw filesystem events for visibility
+- [x] Handle `Create(File)` and `Modify(Name)` events
 - [x] Implement file encryption using AES-256-GCM (`encryptor.rs`)
 - [x] Generate secure random nonce per file
 - [x] Prepend nonce to ciphertext in output file
-- [x] Write encrypted file to disk
-- [x] Automatically append `.vault` extension, removing original
 - [x] Embed original filename or extension as metadata in encrypted output
-- [x] Wire up `config`, `encryptor`, and `watcher` in `main.rs`
-- [x] Handle Result types properly in `encrypt_file`
-- [x] Implement `decrypt_file` to support full encryption ➔ decryption roundtrip
-- [x] Write decrypted output to `decrypted/` folder using `Path::new().join()`
-- [x] Refactor decrypt logic to read and apply original filename
+- [x] Write encrypted output with `.vault` extension (based on file stem)
+- [x] Automatically append `.vault` extension, removing original
+- [x] Upload encrypted file via SFTP (`sftp.rs`)
+- [x] Delete original file after encryption and upload
+- [x] Wire up `config`, `encryptor`, `sftp`, and `watcher` in `main.rs`
+- [x] Gracefully shut down watcher using `ctrlc` signal
+- [x] Securely zeroize encryption key after use
 
 ## Testing
 
@@ -99,16 +102,22 @@ MIT License
 
 ## Code Improvements
 
-- [ ] Replace remaining `unwrap`/`expect` with proper error handling
+- [x] Refactor decrypt logic to read and apply original filename
+- [x] Replace unwrap/expect with proper error handling in critical paths
+- [x] Refactor filename handling using `Path::with_file_name` and `.join()`
 - [ ] Refactor shared I/O utilities into helpers
 - [ ] Consider splitting `encryptor.rs` into `encryptor.rs` and `decryptor.rs` for clarity
+- [ ] Add retry/backoff logic to failed SFTP uploads
 
 ## Operational
 
-- [x] Handle graceful shutdown (stop watcher thread on Ctrl+C using `ctrlc`)
-- [ ] Securely zeroize encryption keys after use
+- [x] Warn macOS users: `telnet`, `ssh2`, and SFTP may not work inside VSCode/iTerm2 — use macOS Terminal instead
+- [ ] Add optional logging toggle or log levels via `.env`
+- [ ] Create system service or background runner for autostart (Windows/Unix)
 
 ## Future
 
-- [x] Integrate SFTP upload after encryption
-- [x] Store SFTP credentials via config/env
+- [ ] Support decryption CLI for restoring `.vault` files
+- [ ] Optionally archive encrypted files instead of deleting originals
+- [ ] Implement file size limit / throttling for large files
+- [ ] Add UI or tray monitor for running in background
