@@ -3,6 +3,7 @@ test.txt
 encrypted_test.vault
 decrypted_test
 decrypted
+test
 # Added by cargo
 
 /target
