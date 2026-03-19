@@ -1,5 +1,5 @@
-use crate::encryptor::encrypt_file;
-use crate::sftp::upload_file;
+use crate::sftp::upload_file_with_retry;
+use crate::{config, encryptor::encrypt_file};
 
 use aes_gcm::{Aes256Gcm, Key};
 
@@ -72,7 +72,8 @@ fn handle_file(path: &PathBuf, key: &Key<Aes256Gcm>) {
     }
 
     let vault_path = format!("{}.vault", path_str);
-    let upload_result = upload_file(&vault_path);
+    let (retry_count, backoff_ms) = config::load_sftp_retry_config();
+    let upload_result = upload_file_with_retry(&vault_path, retry_count, backoff_ms);
     if let Err(e) = upload_result {
         eprintln!("Upload failed: {:?}", e);
     }
@@ -80,5 +81,35 @@ fn handle_file(path: &PathBuf, key: &Key<Aes256Gcm>) {
     match fs::remove_file(path) {
         Ok(_) => println!("Deleted original: {}", path_str),
         Err(e) => eprintln!("Failed to delete original file: {} — {}", path_str, e),
+    }
+}
+#[cfg(test)]
+mod tests {
+    use aes_gcm::{Aes256Gcm, KeyInit};
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    };
+    use std::time::Duration;
+    use tempfile::tempdir;
+
+    use crate::watcher::start_watching;
+
+    #[test]
+    fn test_start_watching_does_not_crash() {
+        let dir = tempdir().expect("couldn't make tempdir");
+        let shutdown = Arc::new(AtomicBool::new(false));
+        let key = Aes256Gcm::generate_key(aes_gcm::aead::OsRng);
+
+        let watch_dir = dir.path().to_path_buf();
+        let shutdown_clone = shutdown.clone();
+
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_secs(2));
+            shutdown_clone.store(true, Ordering::Relaxed);
+        });
+
+        let result = start_watching(watch_dir.to_str().unwrap(), shutdown, key);
+        assert!(result.is_ok());
     }
 }
