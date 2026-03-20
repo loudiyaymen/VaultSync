@@ -7,13 +7,17 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 
+use crate::config;
+
 pub fn encrypt_file(path: &str, key: &Key<Aes256Gcm>) -> std::io::Result<()> {
     let cipher = Aes256Gcm::new(key);
     let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
     let file_bytes = fs::read(Path::new(path))?;
     let input_path = Path::new(path);
     let stem = input_path.file_stem().unwrap().to_str().unwrap();
-    let output_path = input_path.with_file_name(format!("{}.vault", stem));
+    let output_path = config::encrypted_output_dir().join(format!("{}.vault", stem));
+    fs::create_dir_all(config::encrypted_output_dir())?;
+
     let cipher_text = cipher
         .encrypt(&nonce, file_bytes.as_ref())
         .expect("Encryption failed");
@@ -64,8 +68,9 @@ pub fn _decrypt_file(path: &str, key: &Key<Aes256Gcm>) {
     let plaintext = cipher
         .decrypt(nonce, ciphertext.as_ref())
         .expect("Decryption failed");
-    let output_path = Path::new("decrypted").join(&output_name);
-    fs::create_dir_all("decrypted").expect("Failed to create decrypted folder");
+    let output_dir = config::decrypted_output_dir();
+    fs::create_dir_all(&output_dir).expect("Failed to create decrypted folder");
+    let output_path = output_dir.join(&output_name);
     fs::write(&output_path, plaintext).expect("Failed to write decrypted output");
 }
 #[cfg(test)]
@@ -87,10 +92,12 @@ mod tests {
             .write_all(original_content)
             .expect("failed to write test content");
 
-        let encrypted_path = dir.path().join("test.vault");
         let key = Aes256Gcm::generate_key(OsRng);
         encrypt_file(input_path.to_str().unwrap(), &key).expect("encryption failed");
+        let stem = input_path.file_stem().unwrap().to_str().unwrap();
+        let encrypted_path = config::encrypted_output_dir().join(format!("{}.vault", stem));
 
+        assert!(encrypted_path.exists());
         _decrypt_file(encrypted_path.to_str().unwrap(), &key);
 
         let decrypted_path = Path::new("decrypted").join("test.txt");
@@ -101,4 +108,68 @@ mod tests {
 
         fs::remove_file(&decrypted_path).ok();
     }
+}
+#[test]
+fn test_encrypt_and_decrypt_empty_file() {
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+
+    let input_path = dir.path().join("empty.txt");
+    File::create(&input_path).expect("failed to create empty file");
+
+    let encrypted_path = config::encrypted_output_dir().join("empty.vault");
+    let key = Aes256Gcm::generate_key(OsRng);
+    encrypt_file(input_path.to_str().unwrap(), &key).expect("encryption failed");
+
+    assert!(encrypted_path.exists(), "encrypted file not created");
+
+    _decrypt_file(encrypted_path.to_str().unwrap(), &key);
+    let decrypted_path = config::decrypted_output_dir().join("empty.txt");
+
+    assert!(decrypted_path.exists(), "decrypted file not created");
+    let decrypted_content = fs::read(&decrypted_path).expect("failed to read decrypted file");
+    assert_eq!(decrypted_content, b"");
+}
+
+#[test]
+fn test_encrypt_and_decrypt_binary_file() {
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+
+    let input_path = dir.path().join("binary.bin");
+    let binary_content = vec![0x00, 0xFF, 0xAB, 0xCD, 0x7F];
+    fs::write(&input_path, &binary_content).expect("failed to write binary file");
+
+    let encrypted_path = config::encrypted_output_dir().join("binary.vault");
+    let key = Aes256Gcm::generate_key(OsRng);
+    encrypt_file(input_path.to_str().unwrap(), &key).expect("encryption failed");
+
+    assert!(encrypted_path.exists(), "encrypted file not created");
+
+    _decrypt_file(encrypted_path.to_str().unwrap(), &key);
+    let decrypted_path = config::decrypted_output_dir().join("binary.bin");
+
+    assert!(decrypted_path.exists(), "decrypted file not created");
+    let decrypted_content = fs::read(&decrypted_path).expect("failed to read decrypted file");
+    assert_eq!(decrypted_content, binary_content);
+}
+
+#[test]
+fn test_encrypt_and_decrypt_unicode_filename() {
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+
+    let input_path = dir.path().join("文件.txt");
+    let original_content = b"unicode test content";
+    fs::write(&input_path, original_content).expect("failed to write unicode file");
+
+    let encrypted_path = config::encrypted_output_dir().join("文件.vault");
+    let key = Aes256Gcm::generate_key(OsRng);
+    encrypt_file(input_path.to_str().unwrap(), &key).expect("encryption failed");
+
+    assert!(encrypted_path.exists(), "encrypted file not created");
+
+    _decrypt_file(encrypted_path.to_str().unwrap(), &key);
+    let decrypted_path = config::decrypted_output_dir().join("文件.txt");
+
+    assert!(decrypted_path.exists(), "decrypted file not created");
+    let decrypted_content = fs::read(&decrypted_path).expect("failed to read decrypted file");
+    assert_eq!(decrypted_content, original_content);
 }
