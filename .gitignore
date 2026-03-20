@@ -1,6 +1,7 @@
 .env
 decrypted
 encrypted
+keys
 # Added by cargo
 
 /target
