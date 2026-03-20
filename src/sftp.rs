@@ -6,6 +6,28 @@ use std::{
     net::TcpStream,
     path::Path,
 };
+pub fn upload_file_with_retry(
+    path: &str,
+    max_retries: u32,
+    backoff_ms: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    for attempt in 1..=max_retries {
+        match upload_file(path) {
+            Ok(_) => {
+                println!("Upload succeeded on attempt {}", attempt);
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("Upload failed (attempt {}): {}", attempt, e);
+                if attempt < max_retries {
+                    std::thread::sleep(std::time::Duration::from_millis(backoff_ms));
+                }
+            }
+        }
+    }
+
+    Err(format!("All {} upload attempts failed", max_retries).into())
+}
 
 pub fn upload_file(local_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let host = env::var("SFTP_HOST")?;
