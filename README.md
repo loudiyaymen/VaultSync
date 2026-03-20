@@ -2,66 +2,97 @@
 
 VaultSync is a cross-platform Rust program that watches a folder for incoming files, encrypts them securely, uploads them to a remote SFTP server, and deletes the original unencrypted file afterward.
 
+---
+
 ## Features
 
-- **Folder Monitoring**: Watches for any new file in a designated directory
-- **File Encryption**: Uses AES-256-GCM encryption for high-security standards
-- **SFTP Upload**: Sends encrypted files to a remote server over a secure SFTP connection
-- **Cleanup**: Deletes original plaintext files after secure upload
-- **Autostart Capable**: Can be configured to run automatically at system boot on Windows
+- **Folder Monitoring**: Watches a configured directory for any new files
+- **File Encryption**: Uses AES-256-GCM for modern, secure encryption
+- **Metadata Embedding**: Stores original filename inside encrypted output
+- **SFTP Upload**: Transfers encrypted files to a remote server
+- **Retry Support**: Automatically retries failed SFTP uploads
+- **Cleanup**: Deletes original file after successful encryption and upload
+- **Path Customization**: Configurable input/output folders via `.env`
+- **Tested Edge Cases**: Handles empty files, binary data, and unicode filenames
+- **Autostart Capable**: Can be run as a background service on boot
 
-## How it works
+---
+
+## How it Works
 
 1. Watches a specific folder for any new files
-2. Encrypts each file using a pre-shared key
-3. Sends the encrypted file via SFTP
-4. Keeps the encrypted version, deletes the original
+2. Encrypts each file using AES-256-GCM and embeds its original filename
+3. Stores the encrypted file in an output directory
+4. Uploads the file via SFTP to the configured remote directory
+5. Deletes the original plaintext file after successful upload
+
+---
 
 ## Usage
 
-1. Set configuration values in a `.env` file:
+### 1. Set environment variables in a `.env` file:
 
-   ```env
-   WATCH_DIR=/path/to/watch
-   ENCRYPTION_KEY=base64encodedkey==
-   SFTP_HOST=sftp.example.com
-   SFTP_USERNAME=your_username
-   SFTP_PASSWORD=your_password
-   SFTP_DEST_DIR=/remote/path
+```env
+WATCH_DIR=/path/to/watch
+ENCRYPTED_OUTPUT_DIR=encrypted
+DECRYPTED_OUTPUT_DIR=decrypted
 
-    Build and run the project:
+SFTP_HOST=your.server.com
+SFTP_PORT=22
+SFTP_USER=your_username
+SFTP_PASS=your_password
+SFTP_REMOTE_DIR=/path/on/server
+```
 
-    cargo build --release
-    ./target/release/vault_sync
+### 2. Build and run the project:
 
-    (Optional) Configure autostart for background running on system startup.
-   ```
+```bash
+cargo build --release
+./target/release/vault_sync
+```
 
-Cross-Platform
+(Optional) Configure autostart for background running on system startup.
 
-    ✅ Works on Linux, macOS, and Windows
+---
 
-    ✅ Cross-compilation supported (x86_64-pc-windows-gnu for Windows binaries)
+## Cross-Platform
 
-⚠️ Important Notes for macOS Users
+✅ Works on **Linux**, **macOS**, and **Windows**  
+✅ Cross-compilation supported for `x86_64-pc-windows-gnu` target
 
-    Terminal apps like iTerm2 and VSCode Terminal may be sandboxed by macOS.
+---
 
-    Running ssh2, telnet, or any raw socket-based Rust code from those apps may result in “No route to host” or similar errors.
+## ⚠️ Notes for macOS Users
 
-    To avoid this: run from the default macOS Terminal.app or ensure your terminal app is granted full disk and network permissions under System Settings → Privacy & Security.
+Some terminal apps (like iTerm2 and VSCode Terminal) may be sandboxed by macOS, which blocks raw socket access.
 
-Dependencies
+This causes tools like `ssh2`, `telnet`, or any network-based Rust client to return errors like:
 
-    notify — file system watching
+```
+No route to host (os error 65)
+```
 
-    aes-gcm — encryption
+**Fix:** Use the built-in **Terminal.app**, or grant **Full Disk Access** and **Network Access** to your preferred terminal via  
+`System Settings → Privacy & Security`.
 
-    ssh2 — SFTP support
+---
 
-    dotenv — environment variable loading
+## Dependencies
 
-License
+| Crate      | Purpose                                                         |
+| ---------- | --------------------------------------------------------------- |
+| `aes-gcm`  | Provides AES-256-GCM authenticated encryption                   |
+| `base64`   | For decoding the base64-encoded encryption key                  |
+| `ctrlc`    | Handles graceful shutdown via Ctrl+C signals                    |
+| `dotenv`   | Loads environment variables from `.env` files                   |
+| `notify`   | Watches file system events for the watched folder               |
+| `ssh2`     | Handles SFTP connections and file transfers                     |
+| `tempfile` | Used in tests to safely create temporary files and directories  |
+| `zeroize`  | Securely erases sensitive data like encryption keys from memory |
+
+---
+
+## License
 
 MIT License
 
@@ -121,3 +152,7 @@ MIT License
 - [ ] Optionally archive encrypted files instead of deleting originals
 - [ ] Implement file size limit / throttling for large files
 - [ ] Add UI or tray monitor for running in background
+
+```
+
+```
