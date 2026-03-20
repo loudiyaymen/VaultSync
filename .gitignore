@@ -1,9 +1,6 @@
 .env
-test.txt
-encrypted_test.vault
-decrypted_test
 decrypted
-test
+encrypted
 # Added by cargo
 
 /target
