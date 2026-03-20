@@ -1,5 +1,4 @@
-use aes_gcm::{aead::OsRng, Aes256Gcm, KeyInit};
-use config::load_watch_dir;
+use config::{load_encryption_key, load_watch_dir};
 use std::{
     path::Path,
     sync::{
@@ -29,7 +28,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })
     .expect("Error setting Ctrl+C handler");
 
-    let mut key = Aes256Gcm::generate_key(OsRng);
+    let mut key = load_encryption_key();
+
     let watcher_key = key.clone();
     println!("Watching directory: {}", watch_dir);
 
