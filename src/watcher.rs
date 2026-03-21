@@ -1,8 +1,7 @@
+use crate::config;
 use crate::sftp::upload_file_with_retry;
-use crate::{config, encryptor::encrypt_file};
 
-use aes_gcm::{Aes256Gcm, Key};
-
+use crate::pgp::{encrypt_file_with_pgp, load_public_key};
 use notify::{
     event::{EventKind, ModifyKind},
     recommended_watcher, Event, RecursiveMode, Result, Watcher,
@@ -18,7 +17,7 @@ use std::{
     time::Duration,
 };
 
-pub fn start_watching(path: &str, shutdown: Arc<AtomicBool>, key: Key<Aes256Gcm>) -> Result<()> {
+pub fn start_watching(path: &str, shutdown: Arc<AtomicBool>) -> Result<()> {
     let (tx, rx) = mpsc::channel::<Result<Event>>();
     let mut watcher = recommended_watcher(tx)?;
     watcher.watch(Path::new(path), RecursiveMode::Recursive)?;
@@ -37,7 +36,7 @@ pub fn start_watching(path: &str, shutdown: Arc<AtomicBool>, key: Key<Aes256Gcm>
                     for path in event.paths {
                         if should_process(&path) {
                             println!("Processing: {:?}", path);
-                            handle_file(&path, &key);
+                            handle_file(&path);
                         }
                     }
                 }
@@ -63,17 +62,24 @@ fn should_process(path: &PathBuf) -> bool {
     }
 }
 
-fn handle_file(path: &PathBuf, key: &Key<Aes256Gcm>) {
+fn handle_file(path: &PathBuf) {
     let path_str = path.to_string_lossy();
+    let cert = match load_public_key(&config::pgp_public_key_path()) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Failed to load PGP key: {:?}", e);
+            return;
+        }
+    };
 
-    if let Err(e) = encrypt_file(&path_str, key) {
-        eprintln!("Encryption failed: {:?}", e);
+    let pgp_path = format!("{}.pgp", path_str);
+    if let Err(e) = encrypt_file_with_pgp(&path_str, &cert) {
+        eprintln!("PGP encryption failed: {:?}", e);
         return;
     }
 
-    let vault_path = format!("{}.vault", path_str);
     let (retry_count, backoff_ms) = config::load_sftp_retry_config();
-    let upload_result = upload_file_with_retry(&vault_path, retry_count, backoff_ms);
+    let upload_result = upload_file_with_retry(&pgp_path, retry_count, backoff_ms);
     if let Err(e) = upload_result {
         eprintln!("Upload failed: {:?}", e);
     }
@@ -83,6 +89,7 @@ fn handle_file(path: &PathBuf, key: &Key<Aes256Gcm>) {
         Err(e) => eprintln!("Failed to delete original file: {} — {}", path_str, e),
     }
 }
+
 #[cfg(test)]
 mod tests {
     use aes_gcm::{Aes256Gcm, KeyInit};
@@ -99,7 +106,7 @@ mod tests {
     fn test_start_watching_does_not_crash() {
         let dir = tempdir().expect("couldn't make tempdir");
         let shutdown = Arc::new(AtomicBool::new(false));
-        let key = Aes256Gcm::generate_key(aes_gcm::aead::OsRng);
+        let _key = Aes256Gcm::generate_key(aes_gcm::aead::OsRng);
 
         let watch_dir = dir.path().to_path_buf();
         let shutdown_clone = shutdown.clone();
@@ -109,7 +116,7 @@ mod tests {
             shutdown_clone.store(true, Ordering::Relaxed);
         });
 
-        let result = start_watching(watch_dir.to_str().unwrap(), shutdown, key);
+        let result = start_watching(watch_dir.to_str().unwrap(), shutdown);
         assert!(result.is_ok());
     }
 }
