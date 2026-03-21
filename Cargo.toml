@@ -5,10 +5,12 @@ edition = "2021"
 
 [dependencies]
 aes-gcm = "0.10.3"
+anyhow = "1.0.98"
 base64 = "0.22.1"
 ctrlc = "3.4.6"
 dotenv = "0.15.0"
 notify = "8.0.0"
+sequoia-openpgp = "2.0.0"
 ssh2 = "0.9.5"
 tempfile = "3.19.1"
 zeroize = "1.8.1"
