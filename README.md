@@ -152,7 +152,3 @@ MIT License
 - [ ] Optionally archive encrypted files instead of deleting originals
 - [ ] Implement file size limit / throttling for large files
 - [ ] Add UI or tray monitor for running in background
-
-```
-
-```
