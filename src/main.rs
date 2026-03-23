@@ -1,4 +1,5 @@
 use config::load_watch_dir;
+use pgp::load_public_key;
 use std::{
     path::Path,
     sync::{
@@ -14,6 +15,8 @@ mod sftp;
 mod watcher;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cert = load_public_key("keys/recipient.asc")?;
+
     let watch_dir = load_watch_dir();
 
     if !Path::new(&watch_dir).exists() {
@@ -31,10 +34,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Watching directory: {}", watch_dir);
 
+    let watcher_cert = cert.clone();
     let watcher_handle = std::thread::spawn(move || {
-        let _ = start_watching(&watch_dir, shutdown_flag);
+        let _ = start_watching(&watch_dir, shutdown_flag, watcher_cert);
     });
 
     watcher_handle.join().unwrap();
+
     Ok(())
 }
