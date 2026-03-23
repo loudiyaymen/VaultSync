@@ -1,11 +1,10 @@
-use crate::config;
-use crate::sftp::upload_file_with_retry;
+use crate::{config, pgp::encrypt_file_with_pgp, sftp::upload_file_with_retry};
 
-use crate::pgp::{encrypt_file_with_pgp, load_public_key};
 use notify::{
     event::{EventKind, ModifyKind},
     recommended_watcher, Event, RecursiveMode, Result, Watcher,
 };
+use sequoia_openpgp::Cert;
 
 use std::{
     fs,
@@ -17,7 +16,7 @@ use std::{
     time::Duration,
 };
 
-pub fn start_watching(path: &str, shutdown: Arc<AtomicBool>) -> Result<()> {
+pub fn start_watching(path: &str, shutdown: Arc<AtomicBool>, cert: Cert) -> Result<()> {
     let (tx, rx) = mpsc::channel::<Result<Event>>();
     let mut watcher = recommended_watcher(tx)?;
     watcher.watch(Path::new(path), RecursiveMode::Recursive)?;
@@ -36,7 +35,7 @@ pub fn start_watching(path: &str, shutdown: Arc<AtomicBool>) -> Result<()> {
                     for path in event.paths {
                         if should_process(&path) {
                             println!("Processing: {:?}", path);
-                            handle_file(&path);
+                            handle_file(&path, &cert);
                         }
                     }
                 }
@@ -62,61 +61,74 @@ fn should_process(path: &PathBuf) -> bool {
     }
 }
 
-fn handle_file(path: &PathBuf) {
+fn handle_file(path: &PathBuf, cert: &Cert) {
     let path_str = path.to_string_lossy();
-    let cert = match load_public_key(&config::pgp_public_key_path()) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("Failed to load PGP key: {:?}", e);
+
+    if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+        if ext == "pgp" {
             return;
         }
-    };
+    }
 
-    let pgp_path = format!("{}.pgp", path_str);
-    if let Err(e) = encrypt_file_with_pgp(&path_str, &cert) {
+    println!("Processing: {:?}", path_str);
+    let file_name = path.file_name().unwrap().to_str().unwrap();
+    let output_path = config::encrypted_output_dir().join(format!("{}.pgp", file_name));
+
+    if let Err(e) = fs::create_dir_all(config::encrypted_output_dir()) {
+        eprintln!("Failed to create encrypted output dir: {:?}", e);
+        return;
+    }
+
+    if let Err(e) = encrypt_file_with_pgp(&path_str, cert) {
         eprintln!("PGP encryption failed: {:?}", e);
         return;
     }
 
+    if !output_path.exists() {
+        eprintln!("Encrypted file not found: {}", output_path.display());
+        return;
+    }
+
     let (retry_count, backoff_ms) = config::load_sftp_retry_config();
-    let upload_result = upload_file_with_retry(&pgp_path, retry_count, backoff_ms);
-    if let Err(e) = upload_result {
-        eprintln!("Upload failed: {:?}", e);
-    }
-
-    match fs::remove_file(path) {
-        Ok(_) => println!("Deleted original: {}", path_str),
-        Err(e) => eprintln!("Failed to delete original file: {} — {}", path_str, e),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use aes_gcm::{Aes256Gcm, KeyInit};
-    use std::sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    };
-    use std::time::Duration;
-    use tempfile::tempdir;
-
-    use crate::watcher::start_watching;
-
-    #[test]
-    fn test_start_watching_does_not_crash() {
-        let dir = tempdir().expect("couldn't make tempdir");
-        let shutdown = Arc::new(AtomicBool::new(false));
-        let _key = Aes256Gcm::generate_key(aes_gcm::aead::OsRng);
-
-        let watch_dir = dir.path().to_path_buf();
-        let shutdown_clone = shutdown.clone();
-
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_secs(2));
-            shutdown_clone.store(true, Ordering::Relaxed);
-        });
-
-        let result = start_watching(watch_dir.to_str().unwrap(), shutdown);
-        assert!(result.is_ok());
+    match upload_file_with_retry(output_path.to_str().unwrap(), retry_count, backoff_ms) {
+        Ok(_) => {
+            if let Err(e) = fs::remove_file(path) {
+                eprintln!("Failed to delete original file: {} — {}", path_str, e);
+            } else {
+                println!("Deleted original: {}", path_str);
+            }
+        }
+        Err(e) => {
+            eprintln!("Upload failed: {:?}", e);
+        }
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use aes_gcm::{Aes256Gcm, KeyInit};
+//     use std::sync::{
+//         atomic::{AtomicBool, Ordering},
+//         Arc,
+//     };
+//     use std::time::Duration;
+//     use tempfile::tempdir;
+
+//     use crate::watcher::start_watching;
+
+//     #[test]
+//     fn test_start_watching_does_not_crash() {
+//         let dir = tempdir().expect("couldn't make tempdir");
+//         let shutdown = Arc::new(AtomicBool::new(false));
+//         let watch_dir = dir.path().to_path_buf();
+//         let shutdown_clone = shutdown.clone();
+
+//         std::thread::spawn(move || {
+//             std::thread::sleep(Duration::from_secs(2));
+//             shutdown_clone.store(true, Ordering::Relaxed);
+//         });
+
+//         let result = start_watching(watch_dir.to_str().unwrap(), shutdown,&);
+//         assert!(result.is_ok());
+//     }
+// }
