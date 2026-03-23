@@ -10,6 +10,7 @@ pub fn load_watch_dir() -> String {
     println!("{}", val);
     val
 }
+#[allow(dead_code)]
 pub fn load_encryption_key() -> Key<Aes256Gcm> {
     let key_b64 = env::var("ENCRYPTION_KEY").expect("ENCRYPTION_KEY not set in .env");
     let key_bytes = general_purpose::STANDARD
@@ -36,7 +37,7 @@ pub fn load_sftp_retry_config() -> (u32, u64) {
 
     (retry_count, backoff_ms)
 }
-
+#[allow(dead_code)]
 pub fn encrypted_output_dir() -> PathBuf {
     env::var("ENCRYPTED_DIR")
         .map(PathBuf::from)
@@ -48,6 +49,10 @@ pub fn decrypted_output_dir() -> PathBuf {
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("decrypted"))
 }
+pub fn pgp_public_key_path() -> String {
+    env::var("PGP_PUBLIC_KEY").expect("PGP_PUBLIC_KEY must be set in .env")
+}
+
 #[cfg(test)]
 mod tests {
     use std::env;
