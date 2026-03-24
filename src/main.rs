@@ -1,4 +1,4 @@
-use config::load_watch_dir;
+use config::{load_watch_dir, pgp_public_key_path};
 use pgp::load_public_key;
 use std::{
     path::Path,
@@ -15,7 +15,8 @@ mod sftp;
 mod watcher;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cert = load_public_key("keys/recipient.asc")?;
+    let key_path = pgp_public_key_path();
+    let cert = load_public_key(&key_path)?;
 
     let watch_dir = load_watch_dir();
 
