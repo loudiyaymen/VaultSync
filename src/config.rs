@@ -49,7 +49,7 @@ pub fn decrypted_output_dir() -> PathBuf {
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("decrypted"))
 }
-#[allow(dead_code)]
+// #[allow(dead_code)]
 
 pub fn pgp_public_key_path() -> String {
     env::var("PGP_PUBLIC_KEY").expect("PGP_PUBLIC_KEY must be set in .env")
