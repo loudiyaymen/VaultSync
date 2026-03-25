@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.vaultsync.agent</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/yourname/path/to/vault_sync</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>WorkingDirectory</key>
+  <string>/Users/yourname/path/to/</string>
+  <key>StandardOutPath</key>
+  <string>/tmp/vaultsync.out</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/vaultsync.err</string>
+</dict>
+</plist>
