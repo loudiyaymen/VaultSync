@@ -15,6 +15,7 @@ mod sftp;
 mod watcher;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    config::setup_autostart();
     let key_path = pgp_public_key_path();
     let cert = load_public_key(&key_path)?;
 
