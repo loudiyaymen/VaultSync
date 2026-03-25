@@ -1,0 +1,11 @@
+[Unit]
+Description=VaultSync File Watcher
+After=network.target
+
+[Service]
+ExecStart=/home/youruser/path/to/vault_sync
+WorkingDirectory=/home/youruser/path/to/
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
