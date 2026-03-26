@@ -76,7 +76,7 @@ fn setup_autostart_windows() {
 
         if !dest.exists() {
             let _ = fs::copy("autostart/VaultSync.lnk", &dest);
-            println!("✅ VaultSync autostart shortcut added to Windows startup folder.");
+            println!("VaultSync autostart shortcut added to Windows startup folder.");
         }
     }
 }
@@ -94,7 +94,7 @@ fn setup_autostart_macos() {
                 .arg(&dest)
                 .output()
                 .ok();
-            println!("✅ VaultSync plist loaded into macOS LaunchAgents.");
+            println!("VaultSync plist loaded into macOS LaunchAgents.");
         }
     }
 }
@@ -113,7 +113,7 @@ fn setup_autostart_linux() {
                 .arg("vaultsync.service")
                 .output()
                 .ok();
-            println!("✅ VaultSync service enabled in systemd user mode.");
+            println!("VaultSync service enabled in systemd user mode.");
         }
     }
 }
