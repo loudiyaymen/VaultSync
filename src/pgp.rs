@@ -50,3 +50,26 @@ pub fn encrypt_file_with_pgp(
 
     Ok(())
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_encrypt_file_with_pgp_creates_output() {
+        let dir = tempdir().unwrap();
+        let input_path = dir.path().join("sample.txt");
+        let output_path = dir.path().join("sample.txt.pgp");
+
+        let mut input = File::create(&input_path).unwrap();
+        writeln!(input, "Test PGP data").unwrap();
+
+        let cert = load_public_key("keys/recipient.asc").unwrap();
+
+        encrypt_file_with_pgp(input_path.to_str().unwrap(), &cert).expect("Encryption failed");
+
+        assert!(output_path.exists(), "PGP file was not created");
+    }
+}
