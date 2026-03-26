@@ -1,3 +1,4 @@
+#![allow(unused)]
 use anyhow::Result;
 use sequoia_openpgp::{
     cert::Cert,
@@ -6,8 +7,10 @@ use sequoia_openpgp::{
     serialize::stream::{Encryptor, LiteralWriter, Message},
 };
 use std::fs::{self, File};
+use std::io::Write;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
+use tempfile::tempdir;
 
 use crate::config;
 
@@ -50,26 +53,23 @@ pub fn encrypt_file_with_pgp(
 
     Ok(())
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs::File;
-    use std::io::Write;
-    use tempfile::tempdir;
+#[test]
+fn test_encrypt_file_with_pgp_creates_output() {
+    let dir = tempdir().unwrap();
+    let input_path = dir.path().join("sample.txt");
 
-    #[test]
-    fn test_encrypt_file_with_pgp_creates_output() {
-        let dir = tempdir().unwrap();
-        let input_path = dir.path().join("sample.txt");
-        let output_path = dir.path().join("sample.txt.pgp");
+    let mut input = File::create(&input_path).unwrap();
+    writeln!(input, "Test PGP data").unwrap();
 
-        let mut input = File::create(&input_path).unwrap();
-        writeln!(input, "Test PGP data").unwrap();
+    let cert = load_public_key("keys/recipient.asc").unwrap();
 
-        let cert = load_public_key("keys/recipient.asc").unwrap();
+    encrypt_file_with_pgp(input_path.to_str().unwrap(), &cert).expect("Encryption failed");
 
-        encrypt_file_with_pgp(input_path.to_str().unwrap(), &cert).expect("Encryption failed");
+    let filename = input_path.file_name().unwrap().to_str().unwrap();
+    let output_path = config::encrypted_output_dir().join(format!("{filename}.pgp"));
 
-        assert!(output_path.exists(), "PGP file was not created");
-    }
+    assert!(
+        output_path.exists(),
+        "PGP file was not created at expected path"
+    );
 }
