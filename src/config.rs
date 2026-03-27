@@ -28,3 +28,11 @@ impl Config {
         Ok(config)
     }
 }
+
+pub fn encrypted_output_dir() -> PathBuf {
+    PathBuf::from("encrypted")
+}
+
+pub fn decrypted_output_dir() -> PathBuf {
+    PathBuf::from("decrypted")
+}
