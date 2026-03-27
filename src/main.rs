@@ -1,47 +1,34 @@
-use config::{load_watch_dir, pgp_public_key_path};
-use pgp::load_public_key;
-use std::{
-    path::Path,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-};
-use watcher::start_watching;
-
 mod config;
+mod encryptor;
 mod pgp;
 mod sftp;
-mod watcher;
+
+use crate::config::Config;
+use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    config::setup_autostart();
-    let key_path = pgp_public_key_path();
-    let cert = load_public_key(&key_path)?;
+    let config = Config::load_from_file("config.toml")?;
 
-    let watch_dir = load_watch_dir();
+    let input_path = Path::new("test/test.txt");
+    let encrypted_filename = input_path.file_name().unwrap().to_str().unwrap().to_owned() + ".asc";
 
-    if !Path::new(&watch_dir).exists() {
-        eprintln!("WATCH_DIR '{}' does not exist.", watch_dir);
-        std::process::exit(1);
-    }
+    let output_path = Path::new(&config.encrypted_dir).join(&encrypted_filename);
+    let pubkey_path = Path::new(&config.pgp_public_key_path);
 
-    let shutdown_flag = Arc::new(AtomicBool::new(false));
+    println!("Encrypting...");
+    pgp::encrypt_file(pubkey_path, input_path, &output_path)?;
+    println!("Encrypted to {}", output_path.display());
 
-    let shutdown_handle = shutdown_flag.clone();
-    ctrlc::set_handler(move || {
-        println!("Received Ctrl+C. Shutting down...");
-        shutdown_handle.store(true, Ordering::Relaxed);
-    })?;
-
-    println!("Watching directory: {}", watch_dir);
-
-    let watcher_cert = cert.clone();
-    let watcher_handle = std::thread::spawn(move || {
-        let _ = start_watching(&watch_dir, shutdown_flag, watcher_cert);
-    });
-
-    watcher_handle.join().unwrap();
+    println!("Uploading...");
+    sftp::upload_file(
+        &config.sftp_host,
+        config.sftp_port,
+        &config.sftp_user,
+        &config.sftp_pass,
+        &output_path,
+        &Path::new(&config.sftp_remote_dir).join(&encrypted_filename),
+    )?;
+    println!("Upload successful.");
 
     Ok(())
 }

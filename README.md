@@ -129,18 +129,18 @@ MIT License
 - [x] Roundtrip tests (AES branch only)
 - [x] Add tests for PGP encryption and output
 - [x] Test empty, binary, and unicode filenames
-- [ ] Add integration test to simulate file watch + encryption + upload
+- [x] Add integration test to simulate file watch + encryption + upload
 
 ### Improvements
 
 - [x] Refactor watcher to skip already encrypted files
 - [x] Use config for all paths and retry settings
-- [ ] Optional logging toggle and verbosity level
+- [x] Optional logging toggle and verbosity level
 - [ ] UI or tray agent (future)
 
 ### Future
 
-- [ ] Add decryption support using `PGP_PRIVATE_KEY`
-- [ ] Archive encrypted files post-upload instead of deleting
-- [ ] Support signing files with private key
+- [x] Add decryption support using `PGP_PRIVATE_KEY`
+- [x] Archive encrypted files post-upload instead of deleting
+- [x] Support signing files with private key
 - [ ] Add encryption method switch (AES <-> PGP)
