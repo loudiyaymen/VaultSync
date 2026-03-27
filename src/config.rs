@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::{fs, path::Path, path::PathBuf};
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct Config {
     pub customer: String,
     pub template_type: String,
@@ -29,10 +30,13 @@ impl Config {
     }
 }
 
+
+#[allow(dead_code)]
 pub fn encrypted_output_dir() -> PathBuf {
     PathBuf::from("encrypted")
 }
 
+#[allow(dead_code)]
 pub fn decrypted_output_dir() -> PathBuf {
     PathBuf::from("decrypted")
 }

@@ -1,4 +1,4 @@
-use pgp::composed::{Message, SignedPublicKey};
+use pgp::composed::SignedPublicKey;
 use pgp::composed::Deserializable;
 use std::fs::{self, File};
 use std::io::Read;

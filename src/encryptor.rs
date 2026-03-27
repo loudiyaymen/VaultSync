@@ -9,6 +9,7 @@ use std::path::Path;
 
 use crate::config;
 
+#[allow(dead_code)]
 pub fn encrypt_file(path: &str, key: &Key<Aes256Gcm>) -> std::io::Result<()> {
     let cipher = Aes256Gcm::new(key);
     let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
