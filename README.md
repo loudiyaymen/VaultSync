@@ -85,17 +85,17 @@ No route to host (os error 65)
 
 ## Dependencies
 
-| Crate                  | Purpose                                                |
-|------------------------|--------------------------------------------------------|
-| `sequoia-openpgp`      | Handles OpenPGP-based encryption                       |
-| `aes-gcm`              | (Deprecated in current branch) Previously used for AES |
-| `base64`               | Used for key decoding (AES legacy support)             |
-| `ctrlc`                | Handles Ctrl+C graceful shutdown                        |
-| `dotenv`               | Loads configuration from `.env`                        |
-| `notify`               | Watches file system changes                            |
-| `ssh2`                 | SFTP connection and upload                             |
-| `tempfile`             | Creates temp files during testing                      |
-| `zeroize`              | Securely erases keys from memory                       |
+| Crate             | Purpose                                                |
+| ----------------- | ------------------------------------------------------ |
+| `sequoia-openpgp` | Handles OpenPGP-based encryption                       |
+| `aes-gcm`         | (Deprecated in current branch) Previously used for AES |
+| `base64`          | Used for key decoding (AES legacy support)             |
+| `ctrlc`           | Handles Ctrl+C graceful shutdown                       |
+| `dotenv`          | Loads configuration from `.env`                        |
+| `notify`          | Watches file system changes                            |
+| `ssh2`            | SFTP connection and upload                             |
+| `tempfile`        | Creates temp files during testing                      |
+| `zeroize`         | Securely erases keys from memory                       |
 
 ---
 
@@ -127,7 +127,7 @@ MIT License
 ### Testing
 
 - [x] Roundtrip tests (AES branch only)
-- [ ] Add tests for PGP encryption and output
+- [x] Add tests for PGP encryption and output
 - [x] Test empty, binary, and unicode filenames
 - [ ] Add integration test to simulate file watch + encryption + upload
 
